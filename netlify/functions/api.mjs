@@ -24,7 +24,7 @@ async function getCfg(store) {
 
 async function sendEmail(t) {
   const key = process.env.RESEND_API_KEY;
-  if (!key) return false;
+  if (!key) return "RESEND_API_KEY is not set in Netlify environment variables.";
   const body = `Ticket ${t.id}\nRaised by: ${t.name} (${t.email})\nStore: ${t.store}\nCategory: ${t.category}\nPriority: ${t.priority}\n\nSubject: ${t.subject}\n\n${t.details}`;
   const payload = {
     from: process.env.FROM_EMAIL || "Ticket Desk <onboarding@resend.dev>",
@@ -38,7 +38,10 @@ async function sendEmail(t) {
     headers: { authorization: "Bearer " + key, "content-type": "application/json" },
     body: JSON.stringify(payload),
   });
-  return r.ok;
+  if (r.ok) return true;
+  const txt = await r.text();
+  console.error("Resend error", r.status, txt);
+  try { return "Resend: " + (JSON.parse(txt).message || txt); } catch { return "Resend error " + r.status; }
 }
 
 export default async (req) => {
@@ -64,9 +67,9 @@ export default async (req) => {
       if (!p || !t.subject || !t.details || !c.categories.includes(t.category))
         return json({ error: "Missing or invalid fields" }, 400);
       await tkStore.setJSON(t.id, t);
-      let emailed = false;
-      try { emailed = await sendEmail(t); } catch {}
-      return json({ id: t.id, emailed });
+      let emailed = false, emailError = "";
+      try { const r = await sendEmail(t); emailed = r === true; if (!emailed) emailError = r; } catch (e) { emailError = String(e.message || e); }
+      return json({ id: t.id, emailed, emailError });
     }
     case "track": {
       const c = await getCfg(cfgStore);
