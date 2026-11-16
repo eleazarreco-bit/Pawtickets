@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Support Ticket Desk</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#1b1f24;--mu:#667085;--bd:#d9dde3;--ac:#1d4ed8;--act:#fff;--ok:#15803d;--wa:#b45309}
+@media (prefers-color-scheme:dark){:root{--bg:#14171c;--card:#1d2127;--tx:#e8eaed;--mu:#9aa3af;--bd:#343a43;--ac:#6b9bff;--act:#0b1220;--ok:#4ade80;--wa:#fbbf24}}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+main{max-width:860px;margin:0 auto;padding:16px}
+h1{font-size:20px;margin:0 0 12px}h2{font-size:16px;margin:0 0 10px}
+nav{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+nav button{background:var(--card);color:var(--tx);border:1px solid var(--bd);padding:8px 14px;border-radius:8px;cursor:pointer;font:inherit}
+nav button.on{background:var(--ac);color:var(--act);border-color:var(--ac)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:14px}
+label{display:block;font-size:13px;color:var(--mu);margin:10px 0 3px}
+input,select,textarea{width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font:inherit}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:560px){.row{grid-template-columns:1fr}}
+.btn{background:var(--ac);color:var(--act);border:0;padding:9px 16px;border-radius:8px;cursor:pointer;font:inherit;margin-top:12px}
+.btn.s{background:transparent;color:var(--ac);border:1px solid var(--ac);padding:4px 10px;margin:0}
+.btn:disabled{opacity:.6}
+.mu{color:var(--mu);font-size:13px}.msg{margin-top:10px;font-size:14px}.ok{color:var(--ok)}.wa{color:var(--wa)}
+.tk{border-top:1px solid var(--bd);padding:10px 0}.tk:first-child{border-top:0}
+.pill{display:inline-block;font-size:12px;padding:1px 8px;border-radius:99px;border:1px solid var(--bd);margin-right:4px}
+.li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--bd)}
+.hide{display:none}
+</style></head><body><main>
+<h1>Support Ticket Desk</h1>
+<nav><button id="t-new" class="on">Raise ticket</button><button id="t-track">Track my ticket</button><button id="t-master">Master login</button></nav>
+
+<section id="v-new" class="card"><h2>Raise a ticket</h2>
+<div class="row"><div><label>Your name</label><input id="n-name"></div><div><label>Your email</label><input id="n-email" type="email"></div></div>
+<div class="row"><div><label>Store / location</label><input id="n-store"></div><div><label>Priority</label><select id="n-pri"><option>Low</option><option selected>Medium</option><option>High</option><option>Urgent</option></select></div></div>
+<div class="row"><div><label>Category</label><select id="n-cat"></select></div><div><label>Concerned person</label><select id="n-per"></select></div></div>
+<label>Subject</label><input id="n-sub"><label>Details</label><textarea id="n-det" rows="5"></textarea>
+<button class="btn" id="n-go">Submit ticket</button><div class="msg" id="n-msg"></div></section>
+
+<section id="v-track" class="card hide"><h2>Track my ticket</h2>
+<div class="row"><div><label>Ticket ID</label><input id="k-id" placeholder="T-XXXXXXX"></div><div><label>Your email (used when raising it)</label><input id="k-email" type="email"></div></div>
+<button class="btn" id="k-go">Check status</button><div class="msg" id="k-out"></div></section>
+
+<section id="v-master" class="hide">
+<div id="m-login" class="card"><h2>Master login</h2><label>Username</label><input id="m-u" autocomplete="off"><label>Password</label><input id="m-p" type="password" autocomplete="off">
+<button class="btn" id="m-go">Log in</button><div class="msg wa" id="m-err"></div></div>
+<div id="m-panel" class="hide">
+<div class="card"><h2>Categories</h2><div class="row"><input id="c-new" placeholder="e.g. IT, Payroll, Operations"><div><button class="btn" id="c-add" style="margin:0">Add category</button></div></div><div id="c-list"></div></div>
+<div class="card"><h2>People (selectable when raising a ticket)</h2><div class="row"><input id="p-name" placeholder="Name"><input id="p-email" type="email" placeholder="Email"></div>
+<button class="btn" id="p-add">Add person</button><div id="p-list"></div></div>
+<div class="card"><h2>All tickets: assign ETA &amp; status</h2><div id="ml" class="mu">Loading…</div></div>
+<button class="btn s" id="m-out">Log out</button></div></section>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let token=null,cfg={categories:[],people:[]};
+async function api(action,data={}){
+  const r=await fetch("/api",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action,token,...data})});
+  const j=await r.json().catch(()=>({error:"Server error"}));
+  if(!r.ok){if(r.status===401&&token){logout()}throw new Error(j.error||"Request failed")}
+  return j;
+}
+function show(v){["new","track","master"].forEach(k=>{$("v-"+k).classList.toggle("hide",k!==v);$("t-"+k).classList.toggle("on",k===v)})}
+$("t-new").onclick=()=>show("new");$("t-track").onclick=()=>show("track");$("t-master").onclick=()=>show("master");
+
+async function loadPublic(){
+  try{const c=await api("config");
+    $("n-cat").innerHTML=c.categories.length?c.categories.map(x=>`<option>${esc(x)}</option>`).join(""):"<option value=''>No categories yet</option>";
+    $("n-per").innerHTML=c.people.length?c.people.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join(""):"<option value=''>No people yet</option>";
+  }catch(e){$("n-msg").textContent="Could not load form options."}
+}
+$("n-go").onclick=async()=>{
+  const m=$("n-msg"),btn=$("n-go");m.className="msg";
+  const d={name:$("n-name").value.trim(),email:$("n-email").value.trim(),store:$("n-store").value.trim(),priority:$("n-pri").value,category:$("n-cat").value,personId:$("n-per").value,subject:$("n-sub").value.trim(),details:$("n-det").value.trim()};
+  if(!d.name||!/^\S+@\S+\.\S+$/.test(d.email)||!d.subject||!d.details||!d.category||d.personId===""){m.className="msg wa";m.textContent="Please fill all fields including a valid email.";return}
+  btn.disabled=true;
+  try{const r=await api("create",d);
+    m.innerHTML=`<span class="ok">Ticket <b>${esc(r.id)}</b> registered.</span> ${r.emailed?"Email notification sent.":'<span class="wa">Saved, but the email notification could not be sent.</span>'} Keep the ID to track it.`;
+    ["n-sub","n-det"].forEach(i=>$(i).value="");
+  }catch(e){m.className="msg wa";m.textContent=e.message}
+  btn.disabled=false;
+};
+$("k-go").onclick=async()=>{
+  const o=$("k-out");o.className="msg";
+  try{const t=await api("track",{id:$("k-id").value.trim(),email:$("k-email").value.trim()});
+    o.innerHTML=`<b>${esc(t.id)}</b> · ${esc(t.subject)}<br><span class="pill">${esc(t.category)}</span><span class="pill">${esc(t.priority)}</span><span class="pill">${esc(t.status)}</span><span class="pill">ETA: ${t.eta?esc(t.eta):"not set yet"}</span>`;
+  }catch(e){o.className="msg wa";o.textContent=e.message}
+};
+
+$("m-go").onclick=async()=>{
+  try{const r=await api("login",{user:$("m-u").value,pass:$("m-p").value});token=r.token;$("m-err").textContent="";
+    $("m-login").classList.add("hide");$("m-panel").classList.remove("hide");await loadAdmin();
+  }catch(e){$("m-err").textContent=e.message}
+};
+function logout(){token=null;$("m-panel").classList.add("hide");$("m-login").classList.remove("hide");$("m-u").value=$("m-p").value=""}
+$("m-out").onclick=logout;
+async function loadAdmin(){cfg=await api("adminConfig");renderCfg();loadTickets()}
+function renderCfg(){
+  $("c-list").innerHTML=cfg.categories.map((x,i)=>`<div class="li"><span>${esc(x)}</span><button class="btn s" data-dc="${i}">Remove</button></div>`).join("");
+  $("p-list").innerHTML=cfg.people.map((x,i)=>`<div class="li"><span>${esc(x.name)} <span class="mu">${esc(x.email)}</span></span><button class="btn s" data-dp="${i}">Remove</button></div>`).join("");
+}
+async function saveCfg(){try{await api("saveConfig",cfg);renderCfg();loadPublic()}catch(e){alert(e.message)}}
+$("c-add").onclick=()=>{const v=$("c-new").value.trim();if(!v||cfg.categories.includes(v))return;cfg.categories.push(v);$("c-new").value="";saveCfg()};
+$("p-add").onclick=()=>{const n=$("p-name").value.trim(),e=$("p-email").value.trim();if(!n||!/^\S+@\S+\.\S+$/.test(e))return alert("Enter a name and a valid email.");cfg.people.push({name:n,email:e});$("p-name").value=$("p-email").value="";saveCfg()};
+async function loadTickets(){
+  try{const ts=await api("adminTickets");
+    $("ml").innerHTML=ts.length?ts.map(t=>`<div class="tk"><b>${esc(t.id)}</b> · ${esc(t.subject)} <span class="mu">(${esc(t.category)}, ${esc(t.priority)} · ${esc(t.name)}, ${esc(t.store)} · to ${esc(t.personName)})</span>
+    <div class="mu" style="white-space:pre-wrap">${esc(t.details)}</div>
+    <div class="row"><div><label>ETA</label><input type="date" data-eta="${esc(t.id)}" value="${esc(t.eta)}"></div>
+    <div><label>Status</label><select data-st="${esc(t.id)}">${["Open","In progress","Resolved","Closed"].map(s=>`<option${t.status===s?" selected":""}>${s}</option>`).join("")}</select></div></div>
+    <button class="btn s" style="margin-top:8px" data-save="${esc(t.id)}">Save</button> <span class="mu" id="sv-${esc(t.id)}"></span></div>`).join(""):"No tickets yet.";
+  }catch(e){$("ml").textContent=e.message}
+}
+document.addEventListener("click",async ev=>{
+  const d=ev.target.dataset;if(!d)return;
+  if(d.dc!==undefined){cfg.categories.splice(+d.dc,1);saveCfg()}
+  if(d.dp!==undefined){cfg.people.splice(+d.dp,1);saveCfg()}
+  if(d.save){const id=d.save,s=$("sv-"+id);
+    try{await api("setEta",{id,eta:document.querySelector(`[data-eta="${id}"]`).value,status:document.querySelector(`[data-st="${id}"]`).value});s.textContent="Saved ✓"}catch(e){s.textContent=e.message}}
+});
+loadPublic();
+</script></body></html>
