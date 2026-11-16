@@ -1,30 +1,14 @@
-TICKET DESK - GMAIL EMAIL SETUP
-
-DEPLOY
-1. Upload this folder to your GitHub repository connected to Netlify, or deploy with Netlify CLI.
-2. Do not use drag-and-drop deploys; Netlify Functions need a build/deploy workflow.
-3. In Netlify > Site configuration > Environment variables, add:
-   GMAIL_USER = eleazar.reco@gmail.com
-   GMAIL_APP_PASSWORD = your 16-character Google App Password (no spaces)
-   OFFICE_EMAIL = office@primeaccesswireless.com
-   Optional existing settings:
-   MASTER_USER, MASTER_PASS, TOKEN_SECRET
-4. Trigger a fresh deploy after adding/changing variables.
-
-CREATE A GOOGLE APP PASSWORD
-1. Sign in to the Google account eleazar.reco@gmail.com.
-2. Turn on 2-Step Verification in Google Account > Security.
-3. Open Google Account > Security > App passwords.
-4. Create an app password named "Netlify Ticket Desk".
-5. Copy the 16-character password and put it in Netlify as GMAIL_APP_PASSWORD.
-   Do not use your normal Gmail password.
-6. If Google does not show App passwords, the account may not be eligible (for example, Advanced Protection, a managed work/school account, or 2-Step Verification not enabled).
-
-EMAIL BEHAVIOUR
-- Every successfully created ticket triggers an email from eleazar.reco@gmail.com to office@primeaccesswireless.com.
-- The ticket raiser's email is not CC'd. Replies can be sent to the ticket raiser's email using Reply.
-- Tickets are still saved even if email delivery fails; the page displays the email error.
-- Never put the App Password or other secrets in index.html or browser JavaScript.
-
-SECURITY
-- Keep GMAIL_APP_PASSWORD secret. Do not share it or commit it to GitHub.
+DEPLOY ON NETLIFY
+1. Replace the files in your GitHub repo (or CLI project) with these files, keeping the same folder structure:
+     index.html, netlify.toml, package.json, netlify/functions/api.mjs
+   Drag-and-drop deploys do NOT build functions, so use Git or the Netlify CLI.
+2. Create a Gmail App Password for eleazar.reco@gmail.com:
+     Google Account > Security > turn on 2-Step Verification, then Security > App passwords > create one (name it "Ticket Desk").
+     Copy the 16-character code (no spaces needed).
+3. Netlify > Site configuration > Environment variables, add:
+     GMAIL_APP_PASSWORD   the 16-character app password
+   Optional: GMAIL_USER (default eleazar.reco@gmail.com), OFFICE_EMAIL (default office@primeaccesswireless.com),
+             MASTER_USER / MASTER_PASS (default Backoffice/Backoffice), TOKEN_SECRET (any long random text),
+             TZ_NAME (time zone for the email date, default America/Chicago)
+   Remove RESEND_API_KEY and FROM_EMAIL; they are no longer used.
+4. Redeploy (new variables only apply after a fresh deploy). Raise a test ticket.

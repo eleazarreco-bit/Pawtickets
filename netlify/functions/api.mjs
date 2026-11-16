@@ -1,6 +1,6 @@
 import { getStore } from "@netlify/blobs";
-import { createHmac, timingSafeEqual } from "node:crypto";
 import nodemailer from "nodemailer";
+import { createHmac, timingSafeEqual } from "node:crypto";
 
 const OFFICE = process.env.OFFICE_EMAIL || "office@primeaccesswireless.com";
 const USER = process.env.MASTER_USER || "Backoffice";
@@ -24,34 +24,28 @@ async function getCfg(store) {
 }
 
 async function sendEmail(t) {
-  const gmailUser = process.env.GMAIL_USER;
-  const gmailAppPassword = process.env.GMAIL_APP_PASSWORD;
-  if (!gmailUser || !gmailAppPassword) {
-    return "GMAIL_USER or GMAIL_APP_PASSWORD is not set in Netlify environment variables.";
-  }
-
-  const body = `Ticket ${t.id}\\nRaised by: ${t.name} (${t.email})\\nStore: ${t.store}\\nCategory: ${t.category}\\nPriority: ${t.priority}\\n\\nSubject: ${t.subject}\\n\\n${t.details}`;
-  const transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 465,
-    secure: true,
-    auth: { user: gmailUser, pass: gmailAppPassword },
-  });
-
+  const user = process.env.GMAIL_USER || "eleazar.reco@gmail.com";
+  const pass = process.env.GMAIL_APP_PASSWORD;
+  if (!pass) return "GMAIL_APP_PASSWORD is not set in Netlify environment variables.";
+  const transporter = nodemailer.createTransport({ service: "gmail", auth: { user, pass } });
+  const when = new Date(t.created).toLocaleString("en-US", { timeZone: process.env.TZ_NAME || "America/Chicago" });
+  const text = [
+    `Ticket ID: ${t.id}`, `Date raised: ${when}`, `Priority: ${t.priority}`, `Category: ${t.category}`,
+    `Raised by: ${t.name}`, `Email: ${t.email}`, `Store / location: ${t.store || "-"}`,
+    ``, `Subject: ${t.subject}`, ``, `Details:`, t.details,
+  ].join("\n");
+  const h = (x) => String(x).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+  const row = (k, v) => `<tr><td style="padding:6px 12px;font-weight:bold;background:#f5f3ff">${k}</td><td style="padding:6px 12px">${h(v)}</td></tr>`;
+  const html = `<table style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:14px">${row("Ticket ID", t.id)}${row("Date raised", when)}${row("Priority", t.priority)}${row("Category", t.category)}${row("Raised by", t.name)}${row("Email", t.email)}${row("Store / location", t.store || "-")}${row("Subject", t.subject)}</table><p style="font-family:Arial,sans-serif;font-size:14px"><b>Details:</b><br>${h(t.details).replace(/\n/g, "<br>")}</p>`;
   try {
     await transporter.sendMail({
-      from: `Ticket Desk <${gmailUser}>`,
-      to: OFFICE,
-      subject: `[${t.priority}] ${t.id} - ${t.subject}`,
-      text: body,
-      ...(t.email ? { replyTo: t.email } : {}),
+      from: `"Ticket Desk" <${user}>`, to: OFFICE, replyTo: t.email || undefined,
+      subject: `[${t.priority}] ${t.id} - ${t.subject}`, text, html,
     });
     return true;
   } catch (e) {
-    console.error("Gmail SMTP error", e);
-    return "Gmail SMTP: " + String(e.message || e);
-  } finally {
-    transporter.close();
+    console.error("Email error", e);
+    return "Email: " + (e.message || "send failed");
   }
 }
 
