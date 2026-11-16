@@ -1,5 +1,6 @@
 import { getStore } from "@netlify/blobs";
 import { createHmac, timingSafeEqual } from "node:crypto";
+import nodemailer from "nodemailer";
 
 const OFFICE = process.env.OFFICE_EMAIL || "office@primeaccesswireless.com";
 const USER = process.env.MASTER_USER || "Backoffice";
@@ -23,25 +24,35 @@ async function getCfg(store) {
 }
 
 async function sendEmail(t) {
-  const key = process.env.RESEND_API_KEY;
-  if (!key) return "RESEND_API_KEY is not set in Netlify environment variables.";
-  const body = `Ticket ${t.id}\nRaised by: ${t.name} (${t.email})\nStore: ${t.store}\nCategory: ${t.category}\nPriority: ${t.priority}\n\nSubject: ${t.subject}\n\n${t.details}`;
-  const payload = {
-    from: process.env.FROM_EMAIL || "Ticket Desk <onboarding@resend.dev>",
-    to: [OFFICE],
-    subject: `[${t.priority}] ${t.id} - ${t.subject}`,
-    text: body,
-  };
-  if (t.email) { payload.cc = [t.email]; payload.reply_to = t.email; }
-  const r = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { authorization: "Bearer " + key, "content-type": "application/json" },
-    body: JSON.stringify(payload),
+  const gmailUser = process.env.GMAIL_USER;
+  const gmailAppPassword = process.env.GMAIL_APP_PASSWORD;
+  if (!gmailUser || !gmailAppPassword) {
+    return "GMAIL_USER or GMAIL_APP_PASSWORD is not set in Netlify environment variables.";
+  }
+
+  const body = `Ticket ${t.id}\\nRaised by: ${t.name} (${t.email})\\nStore: ${t.store}\\nCategory: ${t.category}\\nPriority: ${t.priority}\\n\\nSubject: ${t.subject}\\n\\n${t.details}`;
+  const transporter = nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    port: 465,
+    secure: true,
+    auth: { user: gmailUser, pass: gmailAppPassword },
   });
-  if (r.ok) return true;
-  const txt = await r.text();
-  console.error("Resend error", r.status, txt);
-  try { return "Resend: " + (JSON.parse(txt).message || txt); } catch { return "Resend error " + r.status; }
+
+  try {
+    await transporter.sendMail({
+      from: `Ticket Desk <${gmailUser}>`,
+      to: OFFICE,
+      subject: `[${t.priority}] ${t.id} - ${t.subject}`,
+      text: body,
+      ...(t.email ? { replyTo: t.email } : {}),
+    });
+    return true;
+  } catch (e) {
+    console.error("Gmail SMTP error", e);
+    return "Gmail SMTP: " + String(e.message || e);
+  } finally {
+    transporter.close();
+  }
 }
 
 export default async (req) => {
