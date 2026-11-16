@@ -1,6 +1,6 @@
 import { getStore } from "@netlify/blobs";
 import nodemailer from "nodemailer";
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHmac, timingSafeEqual, randomInt } from "node:crypto";
 
 const OFFICE = process.env.OFFICE_EMAIL || "office@primeaccesswireless.com";
 const USER = process.env.MASTER_USER || "Backoffice";
@@ -49,10 +49,29 @@ async function sendEmail(t) {
   }
 }
 
+async function sendDeleteCode(code, t) {
+  const user = process.env.GMAIL_USER || "eleazar.reco@gmail.com";
+  const pass = process.env.GMAIL_APP_PASSWORD;
+  if (!pass) return "GMAIL_APP_PASSWORD is not set in Netlify environment variables.";
+  try {
+    await nodemailer.createTransport({ service: "gmail", auth: { user, pass } }).sendMail({
+      from: `"Ticket Desk" <${user}>`, to: user,
+      subject: `Ticket deletion code: ${code}`,
+      text: `Your 6-digit authorization code to delete ticket ${t.id} is ${code}.\n\nTicket: ${t.subject}\nRaised by: ${t.name}\n\nThe code expires in 10 minutes. If you did not request this, ignore this email.`,
+    });
+    return true;
+  } catch (e) { console.error("Code email error", e); return "Email: " + (e.message || "send failed"); }
+}
+
 export default async (req) => {
   if (req.method !== "POST") return json({ error: "POST only" }, 405);
   let b; try { b = await req.json(); } catch { return json({ error: "Bad request" }, 400); }
   const cfgStore = getStore("config"), tkStore = getStore("tickets"), etaStore = getStore("etas");
+  const logStore = getStore("logs"), codeStore = getStore("codes");
+  const ip = req.headers.get("x-nf-client-connection-ip") || "";
+  const log = async (type, actor, detail) => {
+    try { await logStore.setJSON(String(Date.now()).padStart(15, "0") + "-" + Math.random().toString(36).slice(2, 6), { t: Date.now(), type, actor, detail: clip(detail, 400), ip }); } catch {}
+  };
 
   switch (b.action) {
     case "config": {
@@ -72,8 +91,10 @@ export default async (req) => {
       if (!p || !t.subject || !t.details || !c.categories.includes(t.category))
         return json({ error: "Missing or invalid fields" }, 400);
       await tkStore.setJSON(t.id, t);
+      await log("Ticket raised", t.name, `${t.id} · ${t.category} · ${t.priority} · ${t.subject}`);
       let emailed = false, emailError = "";
       try { const r = await sendEmail(t); emailed = r === true; if (!emailed) emailError = r; } catch (e) { emailError = String(e.message || e); }
+      await log(emailed ? "Email sent" : "Email failed", "System", emailed ? `${t.id} sent to ${OFFICE}` : `${t.id}: ${emailError}`);
       return json({ id: t.id, emailed, emailError });
     }
     case "track": {
@@ -85,7 +106,11 @@ export default async (req) => {
       return json({ id: t.id, subject: t.subject, category: t.category, priority: t.priority, created: t.created, eta: e.eta || "", status: e.status || "Open" });
     }
     case "login":
-      return b.user === USER && b.pass === PASS ? json({ token: makeToken() }) : json({ error: "Invalid credentials" }, 401);
+    {
+      const good = b.user === USER && b.pass === PASS;
+      await log(good ? "Master login" : "Failed login", good ? "Master" : clip(b.user, 40) || "unknown", good ? "Logged in" : "Wrong username or password");
+      return good ? json({ token: makeToken() }) : json({ error: "Invalid credentials" }, 401);
+    }
   }
 
   if (!okToken(b.token)) return json({ error: "Session expired. Log in again." }, 401);
@@ -93,9 +118,15 @@ export default async (req) => {
   switch (b.action) {
     case "adminConfig": return json(await getCfg(cfgStore));
     case "saveConfig": {
+      const old = await getCfg(cfgStore);
       const cats = (Array.isArray(b.categories) ? b.categories : []).map((x) => clip(x, 100)).filter(Boolean);
       const people = (Array.isArray(b.people) ? b.people : []).map((p) => ({ name: clip(p.name, 100), email: clip(p.email, 150) })).filter((p) => p.name && /^\S+@\S+\.\S+$/.test(p.email));
       await cfgStore.setJSON("main", { categories: cats, people });
+      for (const c of cats) if (!old.categories.includes(c)) await log("Category added", "Master", c);
+      for (const c of old.categories) if (!cats.includes(c)) await log("Category removed", "Master", c);
+      const key = (p) => p.name + " <" + p.email + ">";
+      for (const p of people) if (!old.people.some((o) => key(o) === key(p))) await log("Person added", "Master", key(p));
+      for (const p of old.people) if (!people.some((o) => key(o) === key(p))) await log("Person removed", "Master", key(p));
       return json({ ok: true });
     }
     case "adminTickets": {
@@ -108,9 +139,48 @@ export default async (req) => {
       }
       return json(out.sort((a, b) => b.created - a.created));
     }
-    case "setEta":
-      await etaStore.setJSON(clip(b.id, 30), { eta: clip(b.eta, 10), status: ["Open", "In progress", "Resolved", "Closed"].includes(b.status) ? b.status : "Open", updated: Date.now() });
+    case "setEta": {
+      const id = clip(b.id, 30);
+      const status = ["Open", "In progress", "Resolved", "Closed"].includes(b.status) ? b.status : "Open";
+      const eta = clip(b.eta, 10);
+      await etaStore.setJSON(id, { eta, status, updated: Date.now() });
+      await log("ETA / status updated", "Master", `${id} · status ${status} · ETA ${eta || "not set"}`);
       return json({ ok: true });
+    }
+    case "requestDelete": {
+      const id = clip(b.id, 30);
+      const t = await tkStore.get(id, { type: "json" });
+      if (!t) return json({ error: "Ticket not found" }, 404);
+      const code = String(randomInt(100000, 1000000));
+      await codeStore.setJSON("del-" + id, { hash: sign(code + id), exp: Date.now() + 10 * 60e3, tries: 0 });
+      const r = await sendDeleteCode(code, t);
+      await log(r === true ? "Delete code sent" : "Delete code failed", "Master", r === true ? `${id}: code emailed to ${process.env.GMAIL_USER || "eleazar.reco@gmail.com"}` : `${id}: ${r}`);
+      return r === true ? json({ ok: true }) : json({ error: "Could not send the code. " + r }, 500);
+    }
+    case "confirmDelete": {
+      const id = clip(b.id, 30);
+      const rec = await codeStore.get("del-" + id, { type: "json" });
+      if (!rec || rec.exp < Date.now()) return json({ error: "Code expired. Request a new one." }, 400);
+      if (rec.tries >= 5) { await codeStore.delete("del-" + id); return json({ error: "Too many wrong attempts. Request a new code." }, 400); }
+      const code = clip(b.code, 6);
+      const a1 = Buffer.from(sign(code + id)), a2 = Buffer.from(rec.hash);
+      if (a1.length !== a2.length || !timingSafeEqual(a1, a2)) {
+        await codeStore.setJSON("del-" + id, { ...rec, tries: rec.tries + 1 });
+        await log("Delete failed", "Master", `${id}: wrong authorization code`);
+        return json({ error: "Incorrect code." }, 400);
+      }
+      const t = await tkStore.get(id, { type: "json" });
+      await tkStore.delete(id); await etaStore.delete(id); await codeStore.delete("del-" + id);
+      await log("Ticket deleted", "Master", t ? `${id} · ${t.subject} · raised by ${t.name}` : id);
+      return json({ ok: true });
+    }
+    case "adminLog": {
+      const { blobs } = await logStore.list();
+      const keys = blobs.map((x) => x.key).sort().reverse().slice(0, 300);
+      const out = [];
+      for (const k of keys) { const e = await logStore.get(k, { type: "json" }); if (e) out.push(e); }
+      return json(out);
+    }
   }
   return json({ error: "Unknown action" }, 400);
 };

@@ -12,3 +12,6 @@ DEPLOY ON NETLIFY
              TZ_NAME (time zone for the email date, default America/Chicago)
    Remove RESEND_API_KEY and FROM_EMAIL; they are no longer used.
 4. Redeploy (new variables only apply after a fresh deploy). Raise a test ticket.
+
+NEW: Deleting a ticket (Master login > ticket > Delete) emails a 6-digit code from eleazar.reco@gmail.com to eleazar.reco@gmail.com. The code expires in 10 minutes and allows 5 attempts.
+NEW: Master login shows an Activity log (logins, tickets raised, emails sent/failed, config changes, ETA updates, deletions).

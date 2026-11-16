@@ -35,6 +35,9 @@ input[readonly]{background:#f5f3ff}
 .pill.st{background:var(--p2)}.pill.eta{background:#4f46e5}.pill.cat{background:#7c3aed}
 .li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 12px;margin-top:8px;background:#f5f3ff;border-radius:10px}
 .tip{background:linear-gradient(160deg,#ede9fe,#fce7f3);border-radius:14px;padding:20px}.tip h3{margin:0 0 8px;color:var(--p1)}.tip ol{margin:0;padding-left:20px}.tip li{margin-bottom:8px}
+.lgt{width:100%;border-collapse:collapse;font-size:14px}.lgt th{text-align:left;background:#f5f3ff;color:var(--p1);padding:8px 10px;position:sticky;top:0}.lgt td{padding:7px 10px;border-top:1px solid var(--bd);vertical-align:top}
+.lgw{max-height:480px;overflow:auto;overflow-x:auto}.lgw td:first-child{white-space:nowrap}
+.btn.del{color:#dc2626;border-color:#dc2626;margin-left:8px}
 .hide{display:none}
 </style></head><body>
 <header><div class="wrap"><h1>🎫 Support Ticket Desk</h1><p>Raise it. Track it. Get it fixed, fast.</p></div></header>
@@ -63,6 +66,7 @@ input[readonly]{background:#f5f3ff}
 <div class="card c4"><h2>People (names &amp; emails employees choose from)</h2><div class="row2"><input id="p-name" placeholder="Name"><input id="p-email" type="email" placeholder="Email"></div>
 <button class="btn green" id="p-add" style="margin-top:12px">Add person</button><div id="p-list"></div></div></div>
 <div class="card"><h2>All tickets: assign ETA &amp; status</h2><div id="ml" class="mu">Loading…</div></div>
+<div class="card c2"><h2>Activity log <button class="btn s" id="lg-refresh" style="float:right">↻ Refresh</button></h2><div id="lg" class="mu">Loading…</div></div>
 <button class="btn s" id="m-out">Log out</button></div></section>
 </main>
 <script>
@@ -113,12 +117,12 @@ $("m-go").onclick=async()=>{
 };
 function logout(){token=null;$("m-panel").classList.add("hide");$("m-login").classList.remove("hide");$("m-u").value=$("m-p").value=""}
 $("m-out").onclick=logout;
-async function loadAdmin(){cfg=await api("adminConfig");renderCfg();loadTickets()}
+async function loadAdmin(){cfg=await api("adminConfig");renderCfg();loadTickets();loadLog()}
 function renderCfg(){
   $("c-list").innerHTML=cfg.categories.map((x,i)=>`<div class="li"><span>${esc(x)}</span><button class="btn s" data-dc="${i}">Remove</button></div>`).join("");
   $("p-list").innerHTML=cfg.people.map((x,i)=>`<div class="li"><span>${esc(x.name)} <span class="mu">${esc(x.email)}</span></span><button class="btn s" data-dp="${i}">Remove</button></div>`).join("");
 }
-async function saveCfg(){try{await api("saveConfig",cfg);renderCfg();loadPublic()}catch(e){alert(e.message)}}
+async function saveCfg(){try{await api("saveConfig",cfg);renderCfg();loadPublic();loadLog()}catch(e){alert(e.message)}}
 $("c-add").onclick=()=>{const v=$("c-new").value.trim();if(!v||cfg.categories.includes(v))return;cfg.categories.push(v);$("c-new").value="";saveCfg()};
 $("p-add").onclick=()=>{const n=$("p-name").value.trim(),e=$("p-email").value.trim();if(!n||!/^\S+@\S+\.\S+$/.test(e))return alert("Enter a name and a valid email.");cfg.people.push({name:n,email:e});$("p-name").value=$("p-email").value="";saveCfg()};
 async function loadTickets(){
@@ -129,7 +133,7 @@ async function loadTickets(){
     <div style="white-space:pre-wrap;margin:8px 0">${esc(t.details)}</div>
     <div class="row2"><div><label>ETA</label><input type="date" data-eta="${esc(t.id)}" value="${esc(t.eta)}"></div>
     <div><label>Status</label><select data-st="${esc(t.id)}">${["Open","In progress","Resolved","Closed"].map(s=>`<option${t.status===s?" selected":""}>${s}</option>`).join("")}</select></div></div>
-    <button class="btn s" style="margin-top:10px" data-save="${esc(t.id)}">Save</button> <span class="mu" id="sv-${esc(t.id)}"></span></div>`).join(""):"No tickets yet.";
+    <button class="btn s" style="margin-top:10px" data-save="${esc(t.id)}">Save</button><button class="btn s del" style="margin-top:10px" data-del="${esc(t.id)}">🗑 Delete</button> <span class="mu" id="sv-${esc(t.id)}"></span><div id="dl-${esc(t.id)}"></div></div>`).join(""):"No tickets yet.";
   }catch(e){$("ml").textContent=e.message}
 }
 document.addEventListener("click",async ev=>{
@@ -137,7 +141,18 @@ document.addEventListener("click",async ev=>{
   if(d.dc!==undefined){cfg.categories.splice(+d.dc,1);saveCfg()}
   if(d.dp!==undefined){cfg.people.splice(+d.dp,1);saveCfg()}
   if(d.save){const id=d.save,s=$("sv-"+id);
-    try{await api("setEta",{id,eta:document.querySelector(`[data-eta="${id}"]`).value,status:document.querySelector(`[data-st="${id}"]`).value});s.textContent="Saved ✓"}catch(e){s.textContent=e.message}}
+    try{await api("setEta",{id,eta:document.querySelector(`[data-eta="${id}"]`).value,status:document.querySelector(`[data-st="${id}"]`).value});s.textContent="Saved ✓";loadLog()}catch(e){s.textContent=e.message}}
+  if(d.del){const id=d.del,a=$("dl-"+id);a.innerHTML='<span class="mu">Sending code…</span>';
+    try{await api("requestDelete",{id});a.innerHTML=`<div class="mu" style="margin-top:8px">A 6-digit code was emailed to eleazar.reco@gmail.com. It expires in 10 minutes.</div><div class="row2" style="margin-top:6px"><input id="dc-${esc(id)}" inputmode="numeric" maxlength="6" placeholder="Enter 6-digit code"><div><button class="btn del" style="margin:0" data-cdel="${esc(id)}">Confirm delete</button><button class="btn s" style="margin-left:8px" data-cdc="${esc(id)}">Cancel</button></div></div><div class="wa" id="de-${esc(id)}"></div>`;loadLog()}catch(e){a.innerHTML=`<span class="wa">${esc(e.message)}</span>`}}
+  if(d.cdc)$("dl-"+d.cdc).innerHTML="";
+  if(d.cdel){const id=d.cdel;
+    try{await api("confirmDelete",{id,code:$("dc-"+id).value.trim()});await loadTickets();loadLog()}catch(e){$("de-"+id).textContent=e.message}}
 });
+async function loadLog(){
+  try{const L=await api("adminLog");
+    $("lg").innerHTML=L.length?`<div class="lgw"><table class="lgt"><tr><th>Time</th><th>Event</th><th>By</th><th>Details</th><th>IP</th></tr>${L.map(e=>`<tr><td>${new Date(e.t).toLocaleString()}</td><td><b>${esc(e.type)}</b></td><td>${esc(e.actor)}</td><td>${esc(e.detail)}</td><td class="mu">${esc(e.ip||"")}</td></tr>`).join("")}</table></div>`:"No activity yet.";
+  }catch(e){$("lg").textContent=e.message}
+}
+$("lg-refresh").onclick=loadLog;
 loadPublic();
 </script></body></html>
