@@ -2,85 +2,107 @@
 <html lang="en"><head><meta charset="utf-8"><title>Support Ticket Desk</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-:root{--bg:#f6f7f9;--card:#fff;--tx:#1b1f24;--mu:#667085;--bd:#d9dde3;--ac:#1d4ed8;--act:#fff;--ok:#15803d;--wa:#b45309}
-@media (prefers-color-scheme:dark){:root{--bg:#14171c;--card:#1d2127;--tx:#e8eaed;--mu:#9aa3af;--bd:#343a43;--ac:#6b9bff;--act:#0b1220;--ok:#4ade80;--wa:#fbbf24}}
-body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
-main{max-width:860px;margin:0 auto;padding:16px}
-h1{font-size:20px;margin:0 0 12px}h2{font-size:16px;margin:0 0 10px}
-nav{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
-nav button{background:var(--card);color:var(--tx);border:1px solid var(--bd);padding:8px 14px;border-radius:8px;cursor:pointer;font:inherit}
-nav button.on{background:var(--ac);color:var(--act);border-color:var(--ac)}
-.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:14px}
-label{display:block;font-size:13px;color:var(--mu);margin:10px 0 3px}
-input,select,textarea{width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font:inherit}
-.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:560px){.row{grid-template-columns:1fr}}
-.btn{background:var(--ac);color:var(--act);border:0;padding:9px 16px;border-radius:8px;cursor:pointer;font:inherit;margin-top:12px}
-.btn.s{background:transparent;color:var(--ac);border:1px solid var(--ac);padding:4px 10px;margin:0}
-.btn:disabled{opacity:.6}
-.mu{color:var(--mu);font-size:13px}.msg{margin-top:10px;font-size:14px}.ok{color:var(--ok)}.wa{color:var(--wa)}
-.tk{border-top:1px solid var(--bd);padding:10px 0}.tk:first-child{border-top:0}
-.pill{display:inline-block;font-size:12px;padding:1px 8px;border-radius:99px;border:1px solid var(--bd);margin-right:4px}
-.li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--bd)}
+:root{--p1:#6d28d9;--p2:#db2777;--p3:#f59e0b;--teal:#0891b2;--tx:#1e1b4b;--mu:#6b7280;--bd:#e5e7eb}
+*{box-sizing:border-box}
+body{margin:0;color:var(--tx);font:16px/1.55 "Segoe UI",system-ui,-apple-system,Roboto,sans-serif;background:linear-gradient(135deg,#eef2ff 0%,#fdf2f8 50%,#fffbeb 100%) fixed;min-height:100vh}
+header{background:linear-gradient(110deg,var(--p1),var(--p2) 60%,var(--p3));color:#fff;padding:28px 24px 64px;box-shadow:0 6px 24px rgba(109,40,217,.3)}
+.wrap{max-width:1280px;margin:0 auto;padding:0 24px}
+header .wrap{padding:0}
+header h1{margin:0;font-size:32px;letter-spacing:.3px}header p{margin:4px 0 0;opacity:.92}
+main{max-width:1280px;margin:-40px auto 40px;padding:0 24px}
+nav{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+nav button{background:#fff;color:var(--p1);border:0;padding:12px 22px;border-radius:12px;cursor:pointer;font:600 15px inherit;font-family:inherit;box-shadow:0 3px 10px rgba(0,0,0,.1);transition:.15s}
+nav button:hover{transform:translateY(-2px)}
+nav button.on{background:linear-gradient(110deg,var(--p1),var(--p2));color:#fff}
+.card{background:#fff;border-radius:16px;padding:24px;margin-bottom:20px;box-shadow:0 8px 28px rgba(76,29,149,.12);border-top:5px solid var(--p1)}
+.card.c2{border-top-color:var(--p2)}.card.c3{border-top-color:var(--p3)}.card.c4{border-top-color:var(--teal)}
+h2{font-size:19px;margin:0 0 14px;color:var(--p1)}
+label{display:block;font-size:13px;font-weight:600;color:var(--mu);margin:14px 0 4px}
+input,select,textarea{width:100%;padding:11px 13px;border:2px solid var(--bd);border-radius:10px;background:#fff;color:var(--tx);font:inherit;transition:.15s}
+input:focus,select:focus,textarea:focus{outline:0;border-color:var(--p2);box-shadow:0 0 0 4px rgba(219,39,119,.15)}
+input[readonly]{background:#f5f3ff}
+.row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.row2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+@media(max-width:820px){.row,.row2{grid-template-columns:1fr}}
+.layout{display:grid;grid-template-columns:2fr 1fr;gap:20px;align-items:start}@media(max-width:980px){.layout{grid-template-columns:1fr}}
+.btn{background:linear-gradient(110deg,var(--p1),var(--p2));color:#fff;border:0;padding:12px 26px;border-radius:12px;cursor:pointer;font:600 15px inherit;font-family:inherit;margin-top:18px;box-shadow:0 5px 14px rgba(219,39,119,.35);transition:.15s}
+.btn:hover{transform:translateY(-2px)}.btn:disabled{opacity:.6}
+.btn.s{background:#fff;color:var(--p1);border:2px solid var(--p1);padding:5px 12px;margin:0;box-shadow:none;font-size:13px}
+.btn.green{background:linear-gradient(110deg,var(--teal),#10b981);box-shadow:0 5px 14px rgba(8,145,178,.35)}
+.mu{color:var(--mu);font-size:13px}.msg{margin-top:14px;font-size:15px}.ok{color:#059669;font-weight:600}.wa{color:#c2410c;font-weight:600}
+.tk{border:2px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:12px;background:#fcfcff}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 11px;border-radius:99px;margin:4px 6px 0 0;color:#fff;background:var(--p1)}
+.pill.pr-Low{background:#10b981}.pill.pr-Medium{background:var(--teal)}.pill.pr-High{background:var(--p3)}.pill.pr-Urgent{background:#dc2626}
+.pill.st{background:var(--p2)}.pill.eta{background:#4f46e5}.pill.cat{background:#7c3aed}
+.li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 12px;margin-top:8px;background:#f5f3ff;border-radius:10px}
+.tip{background:linear-gradient(160deg,#ede9fe,#fce7f3);border-radius:14px;padding:20px}.tip h3{margin:0 0 8px;color:var(--p1)}.tip ol{margin:0;padding-left:20px}.tip li{margin-bottom:8px}
 .hide{display:none}
-</style></head><body><main>
-<h1>Support Ticket Desk</h1>
-<nav><button id="t-new" class="on">Raise ticket</button><button id="t-track">Track my ticket</button><button id="t-master">Master login</button></nav>
+</style></head><body>
+<header><div class="wrap"><h1>🎫 Support Ticket Desk</h1><p>Raise it. Track it. Get it fixed, fast.</p></div></header>
+<main>
+<nav><button id="t-new" class="on">➕ Raise ticket</button><button id="t-track">🔍 Track my ticket</button><button id="t-master">🔐 Master login</button></nav>
 
-<section id="v-new" class="card"><h2>Raise a ticket</h2>
-<div class="row"><div><label>Your name</label><input id="n-name"></div><div><label>Your email</label><input id="n-email" type="email"></div></div>
-<div class="row"><div><label>Store / location</label><input id="n-store"></div><div><label>Priority</label><select id="n-pri"><option>Low</option><option selected>Medium</option><option>High</option><option>Urgent</option></select></div></div>
-<div class="row"><div><label>Category</label><select id="n-cat"></select></div><div><label>Concerned person</label><select id="n-per"></select></div></div>
-<label>Subject</label><input id="n-sub"><label>Details</label><textarea id="n-det" rows="5"></textarea>
-<button class="btn" id="n-go">Submit ticket</button><div class="msg" id="n-msg"></div></section>
+<section id="v-new"><div class="layout">
+<div class="card"><h2>Raise a ticket</h2>
+<div class="row"><div><label>Your name</label><select id="n-per"></select></div><div><label>Your email</label><input id="n-email" readonly placeholder="Filled automatically"></div><div><label>Store / location</label><input id="n-store"></div></div>
+<div class="row2"><div><label>Category</label><select id="n-cat"></select></div><div><label>Priority</label><select id="n-pri"><option>Low</option><option selected>Medium</option><option>High</option><option>Urgent</option></select></div></div>
+<label>Subject</label><input id="n-sub"><label>Details</label><textarea id="n-det" rows="6"></textarea>
+<button class="btn" id="n-go">🚀 Submit ticket</button><div class="msg" id="n-msg"></div></div>
+<div class="tip"><h3>How it works</h3><ol><li>Pick your name. Your email is added for you.</li><li>Choose a category and describe the issue.</li><li>Submit. The back office is emailed instantly.</li><li>Use <b>Track my ticket</b> to see the status and ETA.</li></ol></div>
+</div></section>
 
-<section id="v-track" class="card hide"><h2>Track my ticket</h2>
-<div class="row"><div><label>Ticket ID</label><input id="k-id" placeholder="T-XXXXXXX"></div><div><label>Your email (used when raising it)</label><input id="k-email" type="email"></div></div>
-<button class="btn" id="k-go">Check status</button><div class="msg" id="k-out"></div></section>
+<section id="v-track" class="card c4 hide"><h2>Track my ticket</h2>
+<div class="row2"><div><label>Your name</label><select id="k-per"></select></div><div><label>Ticket ID</label><input id="k-id" placeholder="T-XXXXXXX"></div></div>
+<button class="btn green" id="k-go">Check status</button><div class="msg" id="k-out"></div></section>
 
 <section id="v-master" class="hide">
-<div id="m-login" class="card"><h2>Master login</h2><label>Username</label><input id="m-u" autocomplete="off"><label>Password</label><input id="m-p" type="password" autocomplete="off">
+<div id="m-login" class="card c2" style="max-width:480px"><h2>Master login</h2><label>Username</label><input id="m-u" autocomplete="off"><label>Password</label><input id="m-p" type="password" autocomplete="off">
 <button class="btn" id="m-go">Log in</button><div class="msg wa" id="m-err"></div></div>
 <div id="m-panel" class="hide">
-<div class="card"><h2>Categories</h2><div class="row"><input id="c-new" placeholder="e.g. IT, Payroll, Operations"><div><button class="btn" id="c-add" style="margin:0">Add category</button></div></div><div id="c-list"></div></div>
-<div class="card"><h2>People (selectable when raising a ticket)</h2><div class="row"><input id="p-name" placeholder="Name"><input id="p-email" type="email" placeholder="Email"></div>
-<button class="btn" id="p-add">Add person</button><div id="p-list"></div></div>
+<div class="row2">
+<div class="card c3"><h2>Categories</h2><div class="row2"><input id="c-new" placeholder="e.g. IT, Payroll, Operations"><div><button class="btn" id="c-add" style="margin:0">Add category</button></div></div><div id="c-list"></div></div>
+<div class="card c4"><h2>People (names &amp; emails employees choose from)</h2><div class="row2"><input id="p-name" placeholder="Name"><input id="p-email" type="email" placeholder="Email"></div>
+<button class="btn green" id="p-add" style="margin-top:12px">Add person</button><div id="p-list"></div></div></div>
 <div class="card"><h2>All tickets: assign ETA &amp; status</h2><div id="ml" class="mu">Loading…</div></div>
 <button class="btn s" id="m-out">Log out</button></div></section>
 </main>
 <script>
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-let token=null,cfg={categories:[],people:[]};
+let token=null,cfg={categories:[],people:[]},pub={categories:[],people:[]};
 async function api(action,data={}){
   const r=await fetch("/api",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action,token,...data})});
   const j=await r.json().catch(()=>({error:"Server error"}));
-  if(!r.ok){if(r.status===401&&token){logout()}throw new Error(j.error||"Request failed")}
+  if(!r.ok){if(r.status===401&&token)logout();throw new Error(j.error||"Request failed")}
   return j;
 }
 function show(v){["new","track","master"].forEach(k=>{$("v-"+k).classList.toggle("hide",k!==v);$("t-"+k).classList.toggle("on",k===v)})}
 $("t-new").onclick=()=>show("new");$("t-track").onclick=()=>show("track");$("t-master").onclick=()=>show("master");
 
 async function loadPublic(){
-  try{const c=await api("config");
-    $("n-cat").innerHTML=c.categories.length?c.categories.map(x=>`<option>${esc(x)}</option>`).join(""):"<option value=''>No categories yet</option>";
-    $("n-per").innerHTML=c.people.length?c.people.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join(""):"<option value=''>No people yet</option>";
+  try{pub=await api("config");
+    const opts=pub.people.length?"<option value=''>Select your name…</option>"+pub.people.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join(""):"<option value=''>No people added yet</option>";
+    $("n-per").innerHTML=opts;$("k-per").innerHTML=opts;
+    $("n-cat").innerHTML=pub.categories.length?pub.categories.map(x=>`<option>${esc(x)}</option>`).join(""):"<option value=''>No categories yet</option>";
+    showEmail();
   }catch(e){$("n-msg").textContent="Could not load form options."}
 }
+async function showEmail(){const i=$("n-per").value;$("n-email").value=i===""?"":(pub.people.find(p=>String(p.id)===i)||{}).masked||""}
+$("n-per").onchange=showEmail;
 $("n-go").onclick=async()=>{
   const m=$("n-msg"),btn=$("n-go");m.className="msg";
-  const d={name:$("n-name").value.trim(),email:$("n-email").value.trim(),store:$("n-store").value.trim(),priority:$("n-pri").value,category:$("n-cat").value,personId:$("n-per").value,subject:$("n-sub").value.trim(),details:$("n-det").value.trim()};
-  if(!d.name||!/^\S+@\S+\.\S+$/.test(d.email)||!d.subject||!d.details||!d.category||d.personId===""){m.className="msg wa";m.textContent="Please fill all fields including a valid email.";return}
+  const d={personId:$("n-per").value,store:$("n-store").value.trim(),priority:$("n-pri").value,category:$("n-cat").value,subject:$("n-sub").value.trim(),details:$("n-det").value.trim()};
+  if(d.personId===""||!d.subject||!d.details||!d.category){m.className="msg wa";m.textContent="Please select your name, a category, and fill subject and details.";return}
   btn.disabled=true;
   try{const r=await api("create",d);
-    m.innerHTML=`<span class="ok">Ticket <b>${esc(r.id)}</b> registered.</span> ${r.emailed?"Email notification sent.":'<span class="wa">Saved, but the email notification could not be sent.</span>'} Keep the ID to track it.`;
+    m.innerHTML=`<span class="ok">✅ Ticket <b>${esc(r.id)}</b> registered.</span> ${r.emailed?"Email notification sent.":'<span class="wa">Saved, but the email notification could not be sent.</span>'} Keep the ID to track it.`;
     ["n-sub","n-det"].forEach(i=>$(i).value="");
   }catch(e){m.className="msg wa";m.textContent=e.message}
   btn.disabled=false;
 };
 $("k-go").onclick=async()=>{
   const o=$("k-out");o.className="msg";
-  try{const t=await api("track",{id:$("k-id").value.trim(),email:$("k-email").value.trim()});
-    o.innerHTML=`<b>${esc(t.id)}</b> · ${esc(t.subject)}<br><span class="pill">${esc(t.category)}</span><span class="pill">${esc(t.priority)}</span><span class="pill">${esc(t.status)}</span><span class="pill">ETA: ${t.eta?esc(t.eta):"not set yet"}</span>`;
+  try{const t=await api("track",{id:$("k-id").value.trim(),personId:$("k-per").value});
+    o.innerHTML=`<b>${esc(t.id)}</b> · ${esc(t.subject)}<br><span class="pill cat">${esc(t.category)}</span><span class="pill pr-${esc(t.priority)}">${esc(t.priority)}</span><span class="pill st">${esc(t.status)}</span><span class="pill eta">ETA: ${t.eta?esc(t.eta):"not set yet"}</span>`;
   }catch(e){o.className="msg wa";o.textContent=e.message}
 };
 
@@ -101,11 +123,13 @@ $("c-add").onclick=()=>{const v=$("c-new").value.trim();if(!v||cfg.categories.in
 $("p-add").onclick=()=>{const n=$("p-name").value.trim(),e=$("p-email").value.trim();if(!n||!/^\S+@\S+\.\S+$/.test(e))return alert("Enter a name and a valid email.");cfg.people.push({name:n,email:e});$("p-name").value=$("p-email").value="";saveCfg()};
 async function loadTickets(){
   try{const ts=await api("adminTickets");
-    $("ml").innerHTML=ts.length?ts.map(t=>`<div class="tk"><b>${esc(t.id)}</b> · ${esc(t.subject)} <span class="mu">(${esc(t.category)}, ${esc(t.priority)} · ${esc(t.name)}, ${esc(t.store)} · to ${esc(t.personName)})</span>
-    <div class="mu" style="white-space:pre-wrap">${esc(t.details)}</div>
-    <div class="row"><div><label>ETA</label><input type="date" data-eta="${esc(t.id)}" value="${esc(t.eta)}"></div>
+    $("ml").innerHTML=ts.length?ts.map(t=>`<div class="tk"><b>${esc(t.id)}</b> · ${esc(t.subject)}
+    <div><span class="pill cat">${esc(t.category)}</span><span class="pill pr-${esc(t.priority)}">${esc(t.priority)}</span></div>
+    <div class="mu" style="margin-top:6px"><b>Raised by:</b> ${esc(t.name)} (${esc(t.email)}) · <b>Store:</b> ${esc(t.store||"-")} · ${new Date(t.created).toLocaleString()}</div>
+    <div style="white-space:pre-wrap;margin:8px 0">${esc(t.details)}</div>
+    <div class="row2"><div><label>ETA</label><input type="date" data-eta="${esc(t.id)}" value="${esc(t.eta)}"></div>
     <div><label>Status</label><select data-st="${esc(t.id)}">${["Open","In progress","Resolved","Closed"].map(s=>`<option${t.status===s?" selected":""}>${s}</option>`).join("")}</select></div></div>
-    <button class="btn s" style="margin-top:8px" data-save="${esc(t.id)}">Save</button> <span class="mu" id="sv-${esc(t.id)}"></span></div>`).join(""):"No tickets yet.";
+    <button class="btn s" style="margin-top:10px" data-save="${esc(t.id)}">Save</button> <span class="mu" id="sv-${esc(t.id)}"></span></div>`).join(""):"No tickets yet.";
   }catch(e){$("ml").textContent=e.message}
 }
 document.addEventListener("click",async ev=>{

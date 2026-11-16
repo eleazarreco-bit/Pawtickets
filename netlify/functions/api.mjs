@@ -25,15 +25,14 @@ async function getCfg(store) {
 async function sendEmail(t) {
   const key = process.env.RESEND_API_KEY;
   if (!key) return false;
-  const body = `Ticket ${t.id}\nRaised by: ${t.name} (${t.email})\nStore: ${t.store}\nCategory: ${t.category}\nPriority: ${t.priority}\nConcerned person: ${t.personName}\n\nSubject: ${t.subject}\n\n${t.details}`;
+  const body = `Ticket ${t.id}\nRaised by: ${t.name} (${t.email})\nStore: ${t.store}\nCategory: ${t.category}\nPriority: ${t.priority}\n\nSubject: ${t.subject}\n\n${t.details}`;
   const payload = {
     from: process.env.FROM_EMAIL || "Ticket Desk <onboarding@resend.dev>",
     to: [OFFICE],
     subject: `[${t.priority}] ${t.id} - ${t.subject}`,
     text: body,
   };
-  if (t.personEmail) payload.cc = [t.personEmail];
-  if (t.email) payload.reply_to = t.email;
+  if (t.email) { payload.cc = [t.email]; payload.reply_to = t.email; }
   const r = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { authorization: "Bearer " + key, "content-type": "application/json" },
@@ -50,19 +49,19 @@ export default async (req) => {
   switch (b.action) {
     case "config": {
       const c = await getCfg(cfgStore);
-      return json({ categories: c.categories, people: c.people.map((p, i) => ({ id: i, name: p.name })) });
+      return json({ categories: c.categories, people: c.people.map((p, i) => ({ id: i, name: p.name, masked: p.email })) });
     }
     case "create": {
       const c = await getCfg(cfgStore);
       const p = c.people[Number(b.personId)];
       const t = {
         id: "T-" + Date.now().toString(36).toUpperCase(),
-        name: clip(b.name, 100), email: clip(b.email, 150), store: clip(b.store, 100),
+        name: p ? p.name : "", email: p ? p.email : "", store: clip(b.store, 100),
         priority: ["Low", "Medium", "High", "Urgent"].includes(b.priority) ? b.priority : "Medium",
         category: clip(b.category, 100), subject: clip(b.subject, 200), details: clip(b.details, 5000),
-        personName: p ? p.name : "", personEmail: p ? p.email : "", created: Date.now(),
+        created: Date.now(),
       };
-      if (!t.name || !t.subject || !t.details || !c.categories.includes(t.category) || !p)
+      if (!p || !t.subject || !t.details || !c.categories.includes(t.category))
         return json({ error: "Missing or invalid fields" }, 400);
       await tkStore.setJSON(t.id, t);
       let emailed = false;
@@ -70,8 +69,10 @@ export default async (req) => {
       return json({ id: t.id, emailed });
     }
     case "track": {
+      const c = await getCfg(cfgStore);
+      const p = c.people[Number(b.personId)];
       const t = await tkStore.get(clip(b.id, 30).toUpperCase(), { type: "json" });
-      if (!t || t.email.toLowerCase() !== clip(b.email, 150).toLowerCase()) return json({ error: "No matching ticket" }, 404);
+      if (!t || !p || t.email.toLowerCase() !== p.email.toLowerCase()) return json({ error: "No matching ticket for this person" }, 404);
       const e = (await etaStore.get(t.id, { type: "json" })) || {};
       return json({ id: t.id, subject: t.subject, category: t.category, priority: t.priority, created: t.created, eta: e.eta || "", status: e.status || "Open" });
     }
