@@ -30,7 +30,7 @@ async function sendEmail(t) {
     return "GMAIL_USER or GMAIL_APP_PASSWORD is not set in Netlify environment variables.";
   }
 
-  const body = `Ticket ${t.id}\\nRaised by: ${t.name} (${t.email})\\nStore: ${t.store}\\nCategory: ${t.category}\\nPriority: ${t.priority}\\n\\nSubject: ${t.subject}\\n\\n${t.details}`;
+  const body = `Ticket ${t.id}\nRaised by: ${t.name} (${t.email})\nStore: ${t.store}\nCategory: ${t.category}\nPriority: ${t.priority}\n\nSubject: ${t.subject}\n\n${t.details}`;
   const transporter = nodemailer.createTransport({
     host: "smtp.gmail.com",
     port: 465,

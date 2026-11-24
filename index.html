@@ -111,7 +111,7 @@ $("n-go").onclick=async()=>{
   if(d.personId===""||!d.subject||!d.details||!d.category){m.className="msg wa";m.textContent="Please select your name, a category, and fill subject and details.";return}
   btn.disabled=true;
   try{const r=await api("create",d);
-    m.innerHTML=`<span class="ok">✅ Ticket <b>${esc(r.id)}</b> registered.</span> ${r.emailed?"Email notification sent.":'<span class="wa">Saved, but the email notification could not be sent${r.emailError?" ("+esc(r.emailError)+")":""}.</span>'} Keep the ID to track it.`;
+    m.innerHTML=`<span class="ok">✅ Ticket <b>${esc(r.id)}</b> registered.</span> ${r.emailed?"Email notification sent.":`<span class="wa">Saved, but the email notification could not be sent${r.emailError?" ("+esc(r.emailError)+")":""}.</span>`} Keep the ID to track it.`;
     ["n-sub","n-det"].forEach(i=>$(i).value="");loadHome();
   }catch(e){m.className="msg wa";m.textContent=e.message}
   btn.disabled=false;
